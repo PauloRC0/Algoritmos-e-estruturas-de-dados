@@ -23,35 +23,38 @@ function iniciarJogo(nome) {
     document.getElementById("telaNome").style.display = "none";
     document.getElementById("telaJogo").style.display = "block";
     document.getElementById("nomeJogador").textContent = nome;
+
+    iniciarGeracaoRobos(); // inicia o fluxo do jogo
 }
 
-// Finalizar jogo e registrar no ranking
+// Finalizar jogo e registrar no ranking (SALVA UMA VEZ)
 function finalizarJogo() {
     const inicio = parseInt(localStorage.getItem("tempoInicio"));
     const tempoFinal = ((Date.now() - inicio) / 1000).toFixed(2);
     const nome = localStorage.getItem("nomeJogador");
 
     const resultado = {
-        nome: nome,
+        nome,
         tempo: Number(tempoFinal),
         robos: totalRobosConsertados,
-        componentes: totalComponentesTroca
+        componentes: totalComponentesTroca,
+        data: new Date().toLocaleString()
     };
 
     let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
     ranking.push(resultado);
     localStorage.setItem("ranking", JSON.stringify(ranking));
 
-    alert(`Parabéns, ${nome}!  
-Robôs consertados: ${totalRobosConsertados}  
-Componentes trocados: ${totalComponentesTroca}  
+    alert(`Parabéns, ${nome}!
+Robôs consertados: ${totalRobosConsertados}
+Componentes trocados: ${totalComponentesTroca}
 Tempo total: ${tempoFinal}s`);
 
     window.location.href = "ranking.html";
 }
 
 /* =============================================================
-   LISTA ENCADEADA DE ROBÔS
+   LISTA ENCADEADA
    ============================================================= */
 
 class RobotNode {
@@ -116,7 +119,7 @@ class RobotLinkedList {
     }
 
     toArray() {
-        let arr = [];
+        const arr = [];
         let cur = this.head;
         while (cur !== null) {
             arr.push(cur.data);
@@ -127,7 +130,7 @@ class RobotLinkedList {
 }
 
 /* =============================================================
-   PILHA DE COMPONENTES (MANUAL)
+   PILHA MANUAL
    ============================================================= */
 
 class ComponentNode {
@@ -152,9 +155,11 @@ class ComponentStack {
 
     pop() {
         if (!this.top) return null;
+
         const removed = this.top;
         this.top = this.top.next;
         this.size--;
+
         return removed.data;
     }
 
@@ -167,18 +172,18 @@ class ComponentStack {
     }
 
     toArray() {
-        let list = [];
+        const arr = [];
         let cur = this.top;
         while (cur !== null) {
-            list.push(cur.data);
+            arr.push(cur.data);
             cur = cur.next;
         }
-        return list;
+        return arr;
     }
 }
 
 /* =============================================================
-   CLASSE DO ROBÔ
+   CLASSE ROBÔ
    ============================================================= */
 
 class Robot {
@@ -192,41 +197,36 @@ class Robot {
 }
 
 /* =============================================================
-   VARIÁVEIS DO JOGO
+   VARIÁVEIS
    ============================================================= */
 
 const robotsList = new RobotLinkedList();
 let selectedRobotId = null;
 
-// Limite máximo de robôs na oficina
 const LIMITE_ROBOS = 5;
 
-// Contadores para ranking
 let totalRobosConsertados = 0;
 let totalComponentesTroca = 0;
 
 /* =============================================================
-   GERAR ROBÔ ALEATÓRIO
+   GERAR ROBÔ
    ============================================================= */
 
 function spawnRobot() {
-
-    // Bloqueia criação se atingir o limite
     if (robotsList.size >= LIMITE_ROBOS) {
-        alert("🚨 A oficina ficou superlotada! Jogo encerrado!");
-        finalizarJogo(); // Jogo termina aqui
+        alert("🚨 Oficina lotada! Jogo encerrado!");
+        finalizarJogo();
         return;
     }
 
-
-    const id = Math.floor(Math.random() * 10000);
+    const id = Math.floor(Math.random() * 100000);
     const modelos = ["RX-2000", "T-800", "ZetaPrime", "MK-3"];
     const prioridades = ["emergência", "padrão", "baixo risco"];
 
     const stack = new ComponentStack();
-    const qty = Math.floor(Math.random() * 4) + 1;
+    const qnt = Math.floor(Math.random() * 4) + 1;
 
-    for (let i = 0; i < qty; i++) {
+    for (let i = 0; i < qnt; i++) {
         stack.push({
             nome: "Componente " + (i + 1),
             codigo: "C-" + Math.floor(Math.random() * 900 + 100),
@@ -246,16 +246,28 @@ function spawnRobot() {
 }
 
 /* =============================================================
-   EXIBIR ROBÔS
+   LOOP DE CHEGADA DE ROBÔS — AGORA CORRETO
+   ============================================================= */
+
+let intervaloRobos = null;
+
+function iniciarGeracaoRobos() {
+    spawnRobot(); // 1 robô inicial
+
+    intervaloRobos = setInterval(() => {
+        spawnRobot();
+    }, 6000); // a cada 6s
+}
+
+/* =============================================================
+   RENDERIZAÇÃO DOS CARDS
    ============================================================= */
 
 function render() {
-    const robotArea = document.getElementById("robots");
-    robotArea.innerHTML = "";
+    const area = document.getElementById("robots");
+    area.innerHTML = "";
 
-    const robots = robotsList.toArray();
-
-    robots.forEach(robot => {
+    robotsList.toArray().forEach(robot => {
         const div = document.createElement("div");
         div.className = "robot-card";
         if (robot.id === selectedRobotId) div.classList.add("selected");
@@ -264,12 +276,11 @@ function render() {
             <strong>ID:</strong> ${robot.id}<br>
             Modelo: ${robot.model}<br>
             Prioridade: ${robot.priority}<br>
-            Componentes restantes: ${robot.components.size}
+            Componentes: ${robot.components.size}
         `;
 
         div.onclick = () => selectRobot(robot.id);
-
-        robotArea.appendChild(div);
+        area.appendChild(div);
     });
 
     renderStack();
@@ -285,7 +296,7 @@ function selectRobot(id) {
 }
 
 /* =============================================================
-   EXIBIR A PILHA
+   EXIBIR PILHA
    ============================================================= */
 
 function renderStack() {
@@ -295,7 +306,7 @@ function renderStack() {
     stackArea.innerHTML = "";
 
     if (!selectedRobotId) {
-        info.innerText = "Nenhum robô selecionado";
+        info.innerHTML = "Nenhum robô selecionado";
         return;
     }
 
@@ -308,9 +319,8 @@ function renderStack() {
         Estado: ${robot.state}
     `;
 
-    const components = robot.components.toArray();
-    components.forEach(c => {
-        let div = document.createElement("div");
+    robot.components.toArray().forEach(c => {
+        const div = document.createElement("div");
         div.className = "component";
         div.innerText = `${c.nome} → Código: ${c.codigo}`;
         stackArea.appendChild(div);
@@ -318,7 +328,7 @@ function renderStack() {
 }
 
 /* =============================================================
-   VALIDAR CÓDIGO DO COMPONENTE
+   VERIFICAR CÓDIGO
    ============================================================= */
 
 function verifyCode() {
@@ -326,44 +336,27 @@ function verifyCode() {
 
     const typed = document.getElementById("codeInput").value;
     const robot = robotsList.searchById(selectedRobotId);
-
     const top = robot.components.peek();
+
     if (!top) return;
 
     if (typed === top.codigo) {
-
-        // Contabiliza componente trocado
         totalComponentesTroca++;
-
-        alert("✔ Código correto! Componente substituído.");
         robot.components.pop();
 
-        // Se terminou a pilha → robô consertado
         if (robot.components.isEmpty()) {
-            alert("🤖 Robô consertado!");
-
             totalRobosConsertados++;
-
             robotsList.removeById(robot.id);
             selectedRobotId = null;
 
-            // Se acabou o jogo
             if (robotsList.size === 0) {
                 finalizarJogo();
                 return;
             }
         }
-
     } else {
-        alert("❌ Código errado!");
+        alert("❌ Código incorreto!");
     }
-
-    // Tempo entre cada nova chegada de robô (ms)
-    const TEMPO_RODADA = 5000; // 5 segundos
-
-    setInterval(() => {
-        spawnRobot(); // novo robô chega a cada rodada
-    }, TEMPO_RODADA);
 
     document.getElementById("codeInput").value = "";
     render();
