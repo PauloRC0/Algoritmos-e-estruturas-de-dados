@@ -1,9 +1,8 @@
-/* ============================
+/* =============================================================
    SISTEMA DE NOME + RANKING
-   ============================ */
+   ============================================================= */
 
-// ❌ REMOVIDO window.onload (estava iniciando o jogo sem nome)
-
+// Salvar nome e iniciar jogo
 function salvarNome() {
     const nome = document.getElementById("nomeInput").value;
 
@@ -14,7 +13,7 @@ function salvarNome() {
 
     localStorage.setItem("nomeJogador", nome);
 
-    // salva o início do jogo
+    // Salva o início do jogo
     localStorage.setItem("tempoInicio", Date.now());
 
     iniciarJogo(nome);
@@ -26,27 +25,34 @@ function iniciarJogo(nome) {
     document.getElementById("nomeJogador").textContent = nome;
 }
 
+// Finalizar jogo e registrar no ranking
 function finalizarJogo() {
     const inicio = parseInt(localStorage.getItem("tempoInicio"));
     const tempoFinal = ((Date.now() - inicio) / 1000).toFixed(2);
-
     const nome = localStorage.getItem("nomeJogador");
 
-    const resultado = { nome: nome, tempo: Number(tempoFinal) };
+    const resultado = {
+        nome: nome,
+        tempo: Number(tempoFinal),
+        robos: totalRobosConsertados,
+        componentes: totalComponentesTroca
+    };
 
-    let ranking = JSON.parse(localStorage.getItem("rankingJogadores")) || [];
+    let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
     ranking.push(resultado);
+    localStorage.setItem("ranking", JSON.stringify(ranking));
 
-    localStorage.setItem("rankingJogadores", JSON.stringify(ranking));
-
-    alert(`Parabéns, ${nome}! Jogo finalizado em ${tempoFinal}s`);
+    alert(`Parabéns, ${nome}!  
+Robôs consertados: ${totalRobosConsertados}  
+Componentes trocados: ${totalComponentesTroca}  
+Tempo total: ${tempoFinal}s`);
 
     window.location.href = "ranking.html";
 }
 
-/* ============================
-   CLASSE DO NÓ DA LISTA
-   ============================ */
+/* =============================================================
+   LISTA ENCADEADA DE ROBÔS
+   ============================================================= */
 
 class RobotNode {
     constructor(robotData) {
@@ -55,16 +61,12 @@ class RobotNode {
     }
 }
 
-/* ============================
-   LISTA ENCADEADA DE ROBÔS
-   ============================ */
 class RobotLinkedList {
     constructor() {
         this.head = null;
         this.size = 0;
     }
 
-    // Insere no final
     insert(robotData) {
         const newNode = new RobotNode(robotData);
 
@@ -79,7 +81,6 @@ class RobotLinkedList {
         this.size++;
     }
 
-    // Remove usando ID
     removeById(id) {
         if (!this.head) return null;
 
@@ -105,7 +106,6 @@ class RobotLinkedList {
         return cur.data;
     }
 
-    // Buscar robô pelo ID
     searchById(id) {
         let cur = this.head;
         while (cur !== null) {
@@ -115,7 +115,6 @@ class RobotLinkedList {
         return null;
     }
 
-    // Converter para array APENAS PARA EXIBIÇÃO
     toArray() {
         let arr = [];
         let cur = this.head;
@@ -127,9 +126,10 @@ class RobotLinkedList {
     }
 }
 
-/* ============================
-   NÓ DA PILHA DE COMPONENTES
-   ============================ */
+/* =============================================================
+   PILHA DE COMPONENTES (MANUAL)
+   ============================================================= */
+
 class ComponentNode {
     constructor(data) {
         this.data = data;
@@ -137,9 +137,6 @@ class ComponentNode {
     }
 }
 
-/* ============================
-   PILHA MANUAL (STACK)
-   ============================ */
 class ComponentStack {
     constructor() {
         this.top = null;
@@ -169,7 +166,6 @@ class ComponentStack {
         return this.top === null;
     }
 
-    // Conversão para tela (permitido)
     toArray() {
         let list = [];
         let cur = this.top;
@@ -181,9 +177,9 @@ class ComponentStack {
     }
 }
 
-/* ============================
+/* =============================================================
    CLASSE DO ROBÔ
-   ============================ */
+   ============================================================= */
 
 class Robot {
     constructor(id, model, priority, stack) {
@@ -195,23 +191,40 @@ class Robot {
     }
 }
 
-/* ============================
-   ===== LÓGICA DO JOGO ======
-   ============================ */
+/* =============================================================
+   VARIÁVEIS DO JOGO
+   ============================================================= */
 
 const robotsList = new RobotLinkedList();
 let selectedRobotId = null;
 
-// Gerar robô aleatório
+// Limite máximo de robôs na oficina
+const LIMITE_ROBOS = 5;
+
+// Contadores para ranking
+let totalRobosConsertados = 0;
+let totalComponentesTroca = 0;
+
+/* =============================================================
+   GERAR ROBÔ ALEATÓRIO
+   ============================================================= */
+
 function spawnRobot() {
+
+    // Bloqueia criação se atingir o limite
+    if (robotsList.size >= LIMITE_ROBOS) {
+        alert("🚨 A oficina ficou superlotada! Jogo encerrado!");
+        finalizarJogo(); // Jogo termina aqui
+        return;
+    }
+
+
     const id = Math.floor(Math.random() * 10000);
     const modelos = ["RX-2000", "T-800", "ZetaPrime", "MK-3"];
     const prioridades = ["emergência", "padrão", "baixo risco"];
 
-    // Criar pilha de componentes
     const stack = new ComponentStack();
-
-    const qty = Math.floor(Math.random() * 4) + 1; // 1–4 componentes
+    const qty = Math.floor(Math.random() * 4) + 1;
 
     for (let i = 0; i < qty; i++) {
         stack.push({
@@ -232,9 +245,9 @@ function spawnRobot() {
     render();
 }
 
-/* ============================
-   EXIBIR ROBÔS NA TELA
-   ============================ */
+/* =============================================================
+   EXIBIR ROBÔS
+   ============================================================= */
 
 function render() {
     const robotArea = document.getElementById("robots");
@@ -262,18 +275,18 @@ function render() {
     renderStack();
 }
 
-/* ============================
+/* =============================================================
    SELECIONAR ROBÔ
-   ============================ */
+   ============================================================= */
 
 function selectRobot(id) {
     selectedRobotId = id;
     render();
 }
 
-/* ============================
-   EXIBIR A PILHA DO ROBÔ
-   ============================ */
+/* =============================================================
+   EXIBIR A PILHA
+   ============================================================= */
 
 function renderStack() {
     const stackArea = document.getElementById("stack");
@@ -304,9 +317,9 @@ function renderStack() {
     });
 }
 
-/* ============================
-   VALIDAR CÓDIGO DIGITADO
-   ============================ */
+/* =============================================================
+   VALIDAR CÓDIGO DO COMPONENTE
+   ============================================================= */
 
 function verifyCode() {
     if (!selectedRobotId) return alert("Selecione um robô!");
@@ -318,16 +331,23 @@ function verifyCode() {
     if (!top) return;
 
     if (typed === top.codigo) {
+
+        // Contabiliza componente trocado
+        totalComponentesTroca++;
+
         alert("✔ Código correto! Componente substituído.");
         robot.components.pop();
 
-        // Se acabou a pilha, remove o robô
+        // Se terminou a pilha → robô consertado
         if (robot.components.isEmpty()) {
             alert("🤖 Robô consertado!");
+
+            totalRobosConsertados++;
+
             robotsList.removeById(robot.id);
             selectedRobotId = null;
 
-            // Se não houver mais robôs → finaliza o jogo
+            // Se acabou o jogo
             if (robotsList.size === 0) {
                 finalizarJogo();
                 return;
@@ -337,6 +357,13 @@ function verifyCode() {
     } else {
         alert("❌ Código errado!");
     }
+
+    // Tempo entre cada nova chegada de robô (ms)
+    const TEMPO_RODADA = 5000; // 5 segundos
+
+    setInterval(() => {
+        spawnRobot(); // novo robô chega a cada rodada
+    }, TEMPO_RODADA);
 
     document.getElementById("codeInput").value = "";
     render();
