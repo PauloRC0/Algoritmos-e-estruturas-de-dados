@@ -1,52 +1,72 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Oficina Futurista - Reparo de Robôs</title>
     <link rel="stylesheet" href="game.css">
 </head>
+
 <body>
+    <!DOCTYPE html>
 
-    <h1>🔧 Oficina Futurista - Jogo de Reparo de Robôs</h1>
+    <html lang="pt-br">
 
-    <!-- TELA DE NOME DO JOGADOR -->
-    <div id="telaNome" class="popup">
-        <h2>Digite seu nome para iniciar</h2>
-        <input type="text" id="nomeInput" placeholder="Seu nome...">
-        <button onclick="salvarNome()">Salvar e Iniciar</button>
-    </div>
+    <head>
+        <meta charset="UTF-8">
+        <title>Oficina Futurista - Reparo de Robôs</title>
+        <link rel="stylesheet" href="game.css">
+    </head>
 
-    <!-- TELA DO JOGO (oculta até salvar nome) -->
-    <div id="telaJogo" style="display:none;">
+    <body>
 
-        <h2>Bem-vindo, <span id="nomeJogador"></span></h2>
+        <h1>🔧 Oficina Futurista - Jogo de Reparo de Robôs</h1>
 
-        <div class="controls">
-            <button class="control" onclick="spawnRobot()">Adicionar Robô</button>
-            <button class="control" onclick="verifyCode()">Consertar Componente</button>
+        <!-- TELA DE NOME DO JOGADOR -->
+
+        <div id="telaNome" class="popup">
+            <h2>Digite seu nome para iniciar</h2>
+            <input type="text" id="nomeInput" placeholder="Seu nome...">
+            <button onclick="salvarNome()">Salvar e Iniciar</button>
         </div>
 
-        <div id="game-area">
+        <!-- TELA DO JOGO (oculta até salvar nome) -->
 
-            <div id="robot-list">
-                <h2>Robôs na Oficina</h2>
-                <div id="robots"></div>
+        <div id="telaJogo" style="display:none;">
+            <h2>Bem-vindo, <span id="nomeJogador"></span></h2>
+
+            <div id="timer">Tempo: 0s</div>
+
+            <div class="controls">
+                <!-- Botão para adicionar robô -->
+                <button class="control" onclick="spawnRobot()">Adicionar Robô</button>
+                <!-- Botão para consertar componente -->
+                <button class="control" onclick="verifyCode()">Consertar Componente</button>
             </div>
 
-            <div id="details">
-                <h2>Detalhes do Robô Selecionado</h2>
-                <p id="selected-info">Nenhum robô selecionado</p>
+            <div id="game-area">
 
-                <h3>Pilha de Componentes</h3>
-                <div id="stack"></div>
+                <div id="robot-list">
+                    <h2>Robôs na Oficina</h2>
+                    <div id="robots"></div>
+                </div>
 
-                <input class="search" type="text" id="codeInput" placeholder="Digite o código do componente">
-                <button class="control" onclick="verifyCode()">Enviar Código</button>
+                <div id="details">
+                    <h2>Detalhes do Robô Selecionado</h2>
+                    <p id="selected-info">Nenhum robô selecionado</p>
+
+                    <h3>Pilha de Componentes</h3>
+                    <div id="stack"></div>
+
+                    <input class="search" type="text" id="codeInput" placeholder="Digite o código do componente">
+                    <!-- Botão para enviar código -->
+                    <button class="control" onclick="verifyCode()">Enviar Código</button>
+                </div>
+
             </div>
 
         </div>
-    </div>
+        <script src="game.js"></script>
+    </body>
 
-    <script src="game.js"></script>
-</body>
-</html>
+    </html>
