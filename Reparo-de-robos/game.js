@@ -25,10 +25,19 @@ function iniciarJogo(nome) {
     document.getElementById("nomeJogador").textContent = nome;
 
     iniciarGeracaoRobos(); // inicia o fluxo do jogo
+    iniciarTimer();         // inicia o timer
 }
 
 // Finalizar jogo e registrar no ranking (SALVA UMA VEZ)
 function finalizarJogo() {
+    // Para o timer e o loop de robôs
+    clearInterval(intervaloTimer);
+    clearInterval(intervaloRobos);
+
+    // Evita chamar finalizarJogo mais de uma vez
+    if (window.jogoFinalizado) return;
+    window.jogoFinalizado = true;
+
     const inicio = parseInt(localStorage.getItem("tempoInicio"));
     const tempoFinal = ((Date.now() - inicio) / 1000).toFixed(2);
     const nome = localStorage.getItem("nomeJogador");
@@ -42,7 +51,14 @@ function finalizarJogo() {
     };
 
     let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-    ranking.push(resultado);
+
+    const indexExistente = ranking.findIndex(r => r.nome === nome);
+    if (indexExistente >= 0) {
+        ranking[indexExistente] = resultado;
+    } else {
+        ranking.push(resultado);
+    }
+
     localStorage.setItem("ranking", JSON.stringify(ranking));
 
     alert(`Parabéns, ${nome}!
@@ -72,7 +88,6 @@ class RobotLinkedList {
 
     insert(robotData) {
         const newNode = new RobotNode(robotData);
-
         if (!this.head) {
             this.head = newNode;
         } else {
@@ -80,30 +95,23 @@ class RobotLinkedList {
             while (cur.next !== null) cur = cur.next;
             cur.next = newNode;
         }
-
         this.size++;
     }
 
     removeById(id) {
         if (!this.head) return null;
-
         if (this.head.data.id === id) {
             const removed = this.head;
             this.head = this.head.next;
             this.size--;
             return removed.data;
         }
-
-        let cur = this.head;
-        let prev = null;
-
+        let cur = this.head, prev = null;
         while (cur !== null && cur.data.id !== id) {
             prev = cur;
             cur = cur.next;
         }
-
         if (cur === null) return null;
-
         prev.next = cur.next;
         this.size--;
         return cur.data;
@@ -155,11 +163,9 @@ class ComponentStack {
 
     pop() {
         if (!this.top) return null;
-
         const removed = this.top;
         this.top = this.top.next;
         this.size--;
-
         return removed.data;
     }
 
@@ -208,6 +214,27 @@ const LIMITE_ROBOS = 5;
 let totalRobosConsertados = 0;
 let totalComponentesTroca = 0;
 
+let intervaloRobos = null;
+let intervaloTimer = null;
+
+/* =============================================================
+   TIMER
+   ============================================================= */
+
+function iniciarTimer() {
+    const timerEl = document.createElement("div");
+    timerEl.id = "timer";
+    timerEl.style.fontWeight = "bold";
+    timerEl.style.marginBottom = "10px";
+    document.getElementById("telaJogo").prepend(timerEl);
+
+    intervaloTimer = setInterval(() => {
+        const inicio = parseInt(localStorage.getItem("tempoInicio"));
+        const tempoAtual = Math.floor((Date.now() - inicio) / 1000);
+        timerEl.textContent = `⏱ Tempo: ${tempoAtual}s`;
+    }, 1000);
+}
+
 /* =============================================================
    GERAR ROBÔ
    ============================================================= */
@@ -246,14 +273,11 @@ function spawnRobot() {
 }
 
 /* =============================================================
-   LOOP DE CHEGADA DE ROBÔS — AGORA CORRETO
+   LOOP DE CHEGADA DE ROBÔS
    ============================================================= */
-
-let intervaloRobos = null;
 
 function iniciarGeracaoRobos() {
     spawnRobot(); // 1 robô inicial
-
     intervaloRobos = setInterval(() => {
         spawnRobot();
     }, 6000); // a cada 6s
